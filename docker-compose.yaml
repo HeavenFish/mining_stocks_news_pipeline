@@ -1,0 +1,63 @@
+services:
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8081:8080
+    networks:
+      - de_network
+  db:
+    image: pgvector/pgvector:pg15
+    container_name: de_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: silver_warehouse
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - de_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d silver_warehouse"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  airflow:
+    build: .  
+    container_name: de_airflow
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://admin:password123@db/silver_warehouse
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - PYTHONPATH=/opt/airflow
+      - DATABASE_URL=postgresql+psycopg2://admin:password123@db:5432/silver_warehouse
+      - NEWS_API_KEY=${NEWS_API_KEY}
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=123
+      - _AIRFLOW_WWW_USER_CREATE=true
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./src:/opt/airflow/src
+      - ./data:/opt/airflow/data
+    ports:
+      - "8080:8080"
+    networks:
+      - de_network
+    command: standalone
+
+networks:
+  de_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+

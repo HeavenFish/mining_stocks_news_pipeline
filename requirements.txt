@@ -1,0 +1,13 @@
+pandas
+sqlalchemy>=1.4,<2.0
+psycopg2-binary
+yfinance==1.1.0
+multitasking==0.0.11
+textblob
+newsapi-python
+sentence-transformers
+faiss-cpu
+python-dotenv
+newspaper3k
+pyarrow
+fastparquet
